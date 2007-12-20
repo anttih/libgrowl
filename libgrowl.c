@@ -47,6 +47,11 @@ int growl_create_packet(GrowlPacketRegister *packet, GrowlPacket *gp)
 		gp->len += sizeof(unsigned short);
 	}
 	
+	/* defaults */
+	for (i = 0; i < packet->notifications_num; i++) {
+		gp->len += sizeof(unsigned char);
+	}
+	
 	/* find packet size */
 	gp->data = (unsigned char *) malloc(gp->len);
 	
@@ -86,6 +91,12 @@ int growl_create_packet(GrowlPacketRegister *packet, GrowlPacket *gp)
 		
 		data = (unsigned char *) memcpy(data, packet->notifications[i], len);
 		data += len;
+	}
+	
+	/* defaults */
+	for (i = 0; i < packet->notifications_num; i++) {
+		data = (unsigned char *) memcpy(data, (unsigned char *) &i, sizeof(unsigned char));
+		data += sizeof(unsigned char);
 	}
 	
 	return 1;
