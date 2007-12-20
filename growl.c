@@ -1,24 +1,39 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "libgrowl.h"
 
-extern GrowlPacketRegister *packet;
+int register_app(char *name);
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-	register(argv[1]);
+	return register_app(argv[1]);
 }
 
-int register(char *name)
+int register_app(char *name)
 {
-	GrowlPacketRegister reg;
+	GrowlPacketRegister *reg;
+	char app_name[] = "libgrowl";
 	
-	char *list[] = {
-		"Test0", "Test1"
-	};
+	reg = (GrowlPacketRegister *) malloc(sizeof(GrowlPacketRegister));
 	
+	reg->ver  = GROWL_PROTOCOL_VERSION;
+	reg->type = GROWL_TYPE_REGISTRATION_NOAUTH;
 	
+	reg->app_name_len = (unsigned short) strlen(app_name);
 	
-	reg = create_packet(reg, name, list, 2);
+	reg->app_name = (char *) malloc(reg->app_name_len + 1);
+	strcpy(reg->app_name, app_name);
 	
-	send_packet(reg);
+	reg->notifications[0] = "Test1";
+	reg->notifications[1] = "Test2";
+	
+	reg->notifications_num = 2;
+	
+	growl_register_app(reg);
+	
+	free(reg->app_name);
+	free(reg);
+	
+	return 1;
 }

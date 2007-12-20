@@ -12,13 +12,22 @@
 #define GROWL_TYPE_NOTIFICATION_NOAUTH 5
 
 
+#define MAX_NOTIFICATION_NUM 10
+
+#define GROWL_DEFAULT_PORT 9887
+
 typedef struct _growl_registration_packet {
 	unsigned char ver;
 	unsigned char type;
 	unsigned short app_name_len;
 	unsigned char nall;
+	unsigned char ndef;
+	
+	int notifications_num;
+	
 	char *md5; /* 16 bytes (md5), 0 (NOAUTH) */
 	char *app_name;
+	char *notifications[MAX_NOTIFICATION_NUM];
 	
 } GrowlPacketRegister;
 
@@ -27,9 +36,9 @@ typedef struct {
 	unsigned char *data;
 } GrowlPacket;
 
-int register_app(char *);
+int growl_register_app(GrowlPacketRegister *reg);
 
-unsigned char *growl_create_packet(GrowlPacketRegister *, char *, char *[], int);
+int growl_create_packet(GrowlPacketRegister *, GrowlPacket *gp);
 
-int growl_send_packet(GrowlPacket *);
+int growl_send_packet(GrowlPacket *gp);
 
