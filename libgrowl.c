@@ -78,44 +78,45 @@ int growl_create_register_packet(GrowlPacketRegister *packet, GrowlPacket *gp)
 	data = gp->data;
 	
 	/* Version */
-	data = (unsigned char *) memcpy(data, &packet->ver, sizeof(packet->ver));
+	memcpy(data, &packet->ver, sizeof(packet->ver));
 	data += sizeof(packet->ver);
 
 	/* Type */
-	data = (unsigned char *) memcpy(data, &packet->type, sizeof(packet->type));
+	memcpy(data, &packet->type, sizeof(packet->type));
 	data += sizeof(packet->type);
 	
 	len_htons = htons(app_name_len);
 	
 	/* app name length */
-	data = (unsigned char *) memcpy(data, &len_htons, sizeof(unsigned short));
+	memcpy(data, &len_htons, sizeof(unsigned short));
 	data += sizeof(unsigned short);
 	
 	/* nall (number of notifications in the list) */
-	data = (unsigned char *) memcpy(data, (unsigned char *) &packet->notifications_num, sizeof(char));
+	memcpy(data, (unsigned char *) &packet->notifications_num, sizeof(char));
 	data += sizeof(char);
 	
 	/* ndef (number of notifications enabled by default) */
-	data = (unsigned char *) memcpy(data, (unsigned char *) &packet->notifications_num, sizeof(char));
+	memcpy(data, (unsigned char *) &packet->notifications_num, sizeof(char));
 	data += sizeof(char);
 	
 	memcpy(data, packet->app_name, app_name_len);
 	data += app_name_len;
 	
+	/* add each notification */
 	for (i = 0; i < packet->notifications_num; i++) {
 		len = strlen(packet->notifications[i]);
 		len_htons = htons(len);
 		
-		data = (unsigned char *) memcpy(data, &len_htons, sizeof(unsigned short));
+		memcpy(data, &len_htons, sizeof(unsigned short));
 		data += sizeof(unsigned short);
 		
-		data = (unsigned char *) memcpy(data, packet->notifications[i], len);
+		memcpy(data, packet->notifications[i], len);
 		data += len;
 	}
 	
 	/* defaults */
 	for (i = 0; i < packet->notifications_num; i++) {
-		data = (unsigned char *) memcpy(data, (unsigned char *) &i, sizeof(unsigned char));
+		memcpy(data, (unsigned char *) &i, sizeof(unsigned char));
 		data += sizeof(unsigned char);
 	}
 	
