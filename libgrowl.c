@@ -2,6 +2,8 @@
  * 
  * Library implementing the Growl protocol
  * 
+ * @link http://growl.info/documentation/developer/protocol.php
+ * 
  * Author Antti Holvikari <anttih@gmail.com>
  * 
  */
