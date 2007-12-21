@@ -26,8 +26,7 @@ int growl_register_app(GrowlPacketRegister *reg)
 	free(gp->data);
 	free(gp);
 	
-	printf("Sent %d bytes\n", bytes_sent);
-	return 1;
+	return bytes_sent;
 }
 
 int growl_notify(GrowlPacketNtf *ntf)
@@ -43,8 +42,7 @@ int growl_notify(GrowlPacketNtf *ntf)
 	free(gp->data);
 	free(gp);
 	
-	printf("Sent %d bytes\n", bytes_sent);
-	return 1;
+	return bytes_sent;
 }
 
 int growl_create_register_packet(GrowlPacketRegister *packet, GrowlPacket *gp)

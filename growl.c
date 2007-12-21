@@ -3,13 +3,18 @@
 #include <string.h>
 #include "libgrowl.h"
 
+static int bytes = 0;
+
 int register_app(char *name);
 int notify(char *notification, char *title, char *descr, char *app_name);
 
 int main(int argc, char *argv[])
 {
 	register_app(argv[4]);
-	return notify(argv[1], argv[2], argv[3], argv[4]);
+	notify(argv[1], argv[2], argv[3], argv[4]);
+	
+	printf("Sent %d bytes\n", bytes);
+	return 1;
 }
 
 int register_app(char *name)
@@ -28,7 +33,7 @@ int register_app(char *name)
 	
 	reg->notifications_num = 2;
 	
-	growl_register_app(reg);
+	bytes += growl_register_app(reg);
 	
 	free(reg);
 	return 1;
@@ -53,7 +58,7 @@ int notify(char *notification, char *title, char *descr, char *app_name)
 	ntf->descr        = descr;
 	ntf->app_name     = app_name;
 	
-	growl_notify(ntf);
+	bytes += growl_notify(ntf);
 	
 	free(ntf);
 	
