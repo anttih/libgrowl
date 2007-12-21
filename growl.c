@@ -4,26 +4,26 @@
 #include "libgrowl.h"
 
 int register_app(char *name);
+int notify(char *notification, char *title, char *descr, char *app_name);
 
 int main(int argc, char *argv[])
 {
-	return register_app(argv[1]);
+	register_app(argv[4]);
+	return notify(argv[1], argv[2], argv[3], argv[4]);
 }
 
 int register_app(char *name)
 {
 	GrowlPacketRegister *reg;
-	char app_name[] = "libgrowl";
 	
 	reg = (GrowlPacketRegister *) malloc(sizeof(GrowlPacketRegister));
 	
 	reg->ver  = GROWL_PROTOCOL_VERSION;
 	reg->type = GROWL_TYPE_REGISTRATION_NOAUTH;
 	
-	reg->app_name_len = (unsigned short) strlen(app_name);
-	
+	reg->app_name_len = (unsigned short) strlen(name);
 	reg->app_name = (char *) malloc(reg->app_name_len + 1);
-	strcpy(reg->app_name, app_name);
+	strcpy(reg->app_name, name);
 	
 	reg->notifications[0] = "Test1";
 	reg->notifications[1] = "Test2";
@@ -34,6 +34,32 @@ int register_app(char *name)
 	
 	free(reg->app_name);
 	free(reg);
+	
+	return 1;
+}
+
+int notify(char *notification, char *title, char *descr, char *app_name)
+{
+	GrowlPacketNtf *ntf;
+	
+	ntf = (GrowlPacketNtf *) malloc(sizeof(GrowlPacketNtf));
+	
+	ntf->ver  = GROWL_PROTOCOL_VERSION;
+	ntf->type = GROWL_TYPE_NOTIFICATION_NOAUTH;
+	
+	ntf->notification_len = strlen(notification);
+	ntf->title_len        = strlen(title);
+	ntf->descr_len        = strlen(descr);
+	ntf->app_name_len     = strlen(app_name);
+	
+	ntf->notification = notification;
+	ntf->title        = title;
+	ntf->descr        = descr;
+	ntf->app_name     = app_name;
+	
+	growl_notify(ntf);
+	
+	free(ntf);
 	
 	return 1;
 }
