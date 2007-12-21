@@ -15,11 +15,12 @@
 #define MAX_NOTIFICATION_NUM 10
 #define GROWL_DEFAULT_PORT 9887
 
-
+/*
+ * Registration packet
+ */
 typedef struct _growl_registration_packet {
 	unsigned char ver;
 	unsigned char type;
-	unsigned short app_name_len;
 	unsigned char nall;
 	unsigned char ndef;
 	
@@ -28,8 +29,13 @@ typedef struct _growl_registration_packet {
 	
 	char *md5; /* 16 bytes (md5), 0 (NOAUTH) */
 	char *app_name;
+	
 } GrowlPacketRegister;
 
+
+/*
+ * Notification packet
+ */
 typedef struct _growl_notification_packet {
 	unsigned char ver;
 	unsigned char type;

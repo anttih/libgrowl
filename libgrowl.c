@@ -54,22 +54,25 @@ int growl_create_register_packet(GrowlPacketRegister *packet, GrowlPacket *gp)
 	unsigned short len_htons;
 	unsigned short app_name_len;
 	unsigned char *data;
+
+	app_name_len = strlen(packet->app_name);
 	
 	/* this we know for sure */
 	gp->len = 6;
-	gp->len += packet->app_name_len;
+	gp->len += app_name_len;
 	
+	/* Find out how much data to allocate for all notifications */
 	for (i = 0; i < packet->notifications_num; i++) {
 		gp->len += strlen(packet->notifications[i]);
 		gp->len += sizeof(unsigned short);
 	}
 	
-	/* defaults */
+	/* TODO: defaults */
 	for (i = 0; i < packet->notifications_num; i++) {
 		gp->len += sizeof(unsigned char);
 	}
 	
-	/* find packet size */
+	/* allocate for packet data */
 	gp->data = (unsigned char *) malloc(gp->len);
 	
 	data = gp->data;
@@ -82,10 +85,10 @@ int growl_create_register_packet(GrowlPacketRegister *packet, GrowlPacket *gp)
 	data = (unsigned char *) memcpy(data, &packet->type, sizeof(packet->type));
 	data += sizeof(packet->type);
 	
-	/* network byte-order */
-	app_name_len = htons(packet->app_name_len);
+	len_htons = htons(app_name_len);
 	
-	data = (unsigned char *) memcpy(data, &app_name_len, sizeof(unsigned short));
+	/* app name length */
+	data = (unsigned char *) memcpy(data, &len_htons, sizeof(unsigned short));
 	data += sizeof(unsigned short);
 	
 	/* nall (number of notifications in the list) */
@@ -96,8 +99,8 @@ int growl_create_register_packet(GrowlPacketRegister *packet, GrowlPacket *gp)
 	data = (unsigned char *) memcpy(data, (unsigned char *) &packet->notifications_num, sizeof(char));
 	data += sizeof(char);
 	
-	memcpy(data, packet->app_name, packet->app_name_len);
-	data += packet->app_name_len;
+	memcpy(data, packet->app_name, app_name_len);
+	data += app_name_len;
 	
 	for (i = 0; i < packet->notifications_num; i++) {
 		len = strlen(packet->notifications[i]);

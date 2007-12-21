@@ -21,9 +21,7 @@ int register_app(char *name)
 	reg->ver  = GROWL_PROTOCOL_VERSION;
 	reg->type = GROWL_TYPE_REGISTRATION_NOAUTH;
 	
-	reg->app_name_len = (unsigned short) strlen(name);
-	reg->app_name = (char *) malloc(reg->app_name_len + 1);
-	strcpy(reg->app_name, name);
+	reg->app_name = name;
 	
 	reg->notifications[0] = "Test1";
 	reg->notifications[1] = "Test2";
@@ -32,9 +30,7 @@ int register_app(char *name)
 	
 	growl_register_app(reg);
 	
-	free(reg->app_name);
 	free(reg);
-	
 	return 1;
 }
 
