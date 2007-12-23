@@ -162,35 +162,35 @@ int growl_create_ntf_packet(GrowlPacketNtf *packet, GrowlPacket *gp)
 	
 	/* network byte-order */
 	len = htons(packet->notification_len);
-	data = (unsigned char *) memcpy(data, &len, sizeof(unsigned short));
+	memcpy(data, &len, sizeof(unsigned short));
 	data += sizeof(unsigned short);
 	
 	len = htons(packet->title_len);
-	data = (unsigned char *) memcpy(data, &len, sizeof(unsigned short));
+	memcpy(data, &len, sizeof(unsigned short));
 	data += sizeof(unsigned short);
 	
 	len = htons(packet->descr_len);
-	data = (unsigned char *) memcpy(data, &len, sizeof(unsigned short));
+	memcpy(data, &len, sizeof(unsigned short));
 	data += sizeof(unsigned short);
 	
 	len = htons(packet->app_name_len);
-	data = (unsigned char *) memcpy(data, &len, sizeof(unsigned short));
+	memcpy(data, &len, sizeof(unsigned short));
 	data += sizeof(unsigned short);
 	
 	/* actual data */
-	data = (unsigned char *) memcpy(data, packet->notification, packet->notification_len);
+	memcpy(data, packet->notification, packet->notification_len);
 	data += packet->notification_len;
 	
 	/* title */
-	data = (unsigned char *) memcpy(data, packet->title, packet->title_len);
+	memcpy(data, packet->title, packet->title_len);
 	data += packet->title_len;
 	
 	/* descriptions */
-	data = (unsigned char *) memcpy(data, packet->descr, packet->descr_len);
+	memcpy(data, packet->descr, packet->descr_len);
 	data += packet->descr_len;
 	
 	/* application name */
-	data = (unsigned char *) memcpy(data, packet->app_name, packet->app_name_len);
+	memcpy(data, packet->app_name, packet->app_name_len);
 	data += packet->app_name_len;
 	
 	return 1;
