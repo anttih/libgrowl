@@ -15,215 +15,210 @@
 #include <sys/socket.h>
 #include "libgrowl.h"
 
-int growl_register_app(GrowlPacketRegister *reg)
-{
-	int bytes_sent;
-	GrowlPacket *gp;
-	
-	gp = (GrowlPacket *) malloc(sizeof(GrowlPacket));
-	
-	growl_create_register_packet(reg, gp);
-	bytes_sent = growl_send_packet(gp);
-	
-	free(gp->data);
-	free(gp);
-	
-	return bytes_sent;
-}
-
-int growl_notify(GrowlPacketNtf *ntf)
-{
-	int bytes_sent;
-	GrowlPacket *gp;
-	
-	gp = (GrowlPacket *) malloc(sizeof(GrowlPacket));
-	
-	growl_create_ntf_packet(ntf, gp);
-	bytes_sent = growl_send_packet(gp);
-	
-	free(gp->data);
-	free(gp);
-	
-	return bytes_sent;
-}
-
-int growl_create_register_packet(GrowlPacketRegister *packet, GrowlPacket *gp)
+unsigned char *
+growl_create_register_packet(GrowlRegistration *rp, char *notifications[], int notifications_num, unsigned *packet_size)
 {
 	int i;
 	unsigned short len;
-	unsigned short len_htons;
+	unsigned short len_nbo;
 	unsigned short app_name_len;
-	unsigned char *data;
-
-	app_name_len = strlen(packet->app_name);
+	unsigned short app_name_len_nbo;
+	unsigned char nall;
+	unsigned char ndef;
+	size_t length;
+	unsigned char *data, *packet_data;
 	
-	/* this we know for sure */
-	gp->len = 6;
-	gp->len += app_name_len;
+	app_name_len = strlen(rp->app_name);
+	app_name_len_nbo = htons(app_name_len);
+	
+	nall = notifications_num;
+	ndef = notifications_num;
+	
+	length = sizeof(rp->ver) + sizeof(rp->type) + sizeof(app_name_len_nbo) + sizeof(nall) + sizeof(ndef);
+	
+	length += app_name_len;
 	
 	/* Find out how much data to allocate for all notifications */
-	for (i = 0; i < packet->notifications_num; i++) {
-		gp->len += strlen(packet->notifications[i]);
-		gp->len += sizeof(unsigned short);
+	for (i = 0; i < nall; i++) {
+		length += strlen(notifications[i]);
+		length += sizeof(unsigned short);
 	}
 	
 	/* TODO: defaults */
-	for (i = 0; i < packet->notifications_num; i++) {
-		gp->len += sizeof(unsigned char);
+	for (i = 0; i < ndef; i++) {
+		length += sizeof(unsigned char);
+	}
+	
+	if (rp->type == GROWL_TYPE_REGISTRATION) {
+		/* MD5 used */
+		length += 16;
 	}
 	
 	/* allocate for packet data */
-	gp->data = (unsigned char *) malloc(gp->len);
+	packet_data = (unsigned char *) malloc(length);
 	
-	data = gp->data;
+	data = packet_data;
 	
-	/* Version */
-	memcpy(data, &packet->ver, sizeof(packet->ver));
-	data += sizeof(packet->ver);
+	/* -------------------------------------------------------
+	 *
+	 * Start with the actual data
+	 *
+	 */
+	
+	memcpy(data, &rp->ver, sizeof(rp->ver));
+	data += sizeof(rp->ver);
+	
+	memcpy(data, &rp->type, sizeof(rp->type));
+	data += sizeof(rp->type);
 
-	/* Type */
-	memcpy(data, &packet->type, sizeof(packet->type));
-	data += sizeof(packet->type);
+	memcpy(data, &app_name_len_nbo, sizeof(app_name_len_nbo));
+	data += sizeof(app_name_len_nbo);
 	
-	len_htons = htons(app_name_len);
+	memcpy(data, &nall, sizeof(nall));
+	data += sizeof(nall);
+
+	memcpy(data, &ndef, sizeof(ndef));
+	data += sizeof(ndef);
 	
-	/* app name length */
-	memcpy(data, &len_htons, sizeof(unsigned short));
-	data += sizeof(unsigned short);
 	
-	/* nall (number of notifications in the list) */
-	memcpy(data, (unsigned char *) &packet->notifications_num, sizeof(char));
-	data += sizeof(char);
-	
-	/* ndef (number of notifications enabled by default) */
-	memcpy(data, (unsigned char *) &packet->notifications_num, sizeof(char));
-	data += sizeof(char);
-	
-	memcpy(data, packet->app_name, app_name_len);
+	/* application name */
+	memcpy(data, rp->app_name, app_name_len);
 	data += app_name_len;
 	
 	/* add each notification */
-	for (i = 0; i < packet->notifications_num; i++) {
-		len = strlen(packet->notifications[i]);
-		len_htons = htons(len);
+	for (i = 0; i < nall; i++) {
+		len = strlen(notifications[i]);
+		len_nbo = htons(len);
 		
-		memcpy(data, &len_htons, sizeof(unsigned short));
+		memcpy(data, &len_nbo, sizeof(unsigned short));
 		data += sizeof(unsigned short);
 		
-		memcpy(data, packet->notifications[i], len);
+		memcpy(data, notifications[i], len);
 		data += len;
 	}
 	
 	/* defaults */
-	for (i = 0; i < packet->notifications_num; i++) {
+	for (i = 0; i < ndef; i++) {
 		memcpy(data, (unsigned char *) &i, sizeof(unsigned char));
 		data += sizeof(unsigned char);
 	}
 	
-	return 1;
+	*packet_size = length;
+	
+	/* caller must free data */
+	return packet_data;
 }
 
-int growl_create_ntf_packet(GrowlPacketNtf *packet, GrowlPacket *gp)
+unsigned char *
+growl_create_notification_packet(GrowlNotification *ntf, unsigned *packet_size)
 {
-	unsigned short len;
-	unsigned char *data;
+	/* packet size */
+	size_t length;
 	
-	gp->len = sizeof(packet->ver)
-			+ sizeof(packet->type)
-			+ 2 
-			+ sizeof(packet->notification_len)
-			+ sizeof(packet->title_len)
-			+ sizeof(packet->descr_len)
-			+ sizeof(packet->app_name_len);
-			
-	gp->len += packet->notification_len
-			+ packet->title_len
-			+ packet->descr_len
-			+ packet->app_name_len;
-	gp->data = (unsigned char *) malloc(gp->len);
+	unsigned short notification_len;
+	unsigned short title_len;
+	unsigned short descr_len;
+	unsigned short app_name_len;
 	
-	data = gp->data;
+	unsigned short notification_len_nbo;
+	unsigned short title_len_nbo;
+	unsigned short descr_len_nbo;
+	unsigned short app_name_len_nbo;
+	
+	/* packet data */
+	unsigned char *data, *packet_data;
+	
+	/* lengths */
+	notification_len = strlen(ntf->notification);
+	title_len        = strlen(ntf->title);
+	descr_len        = strlen(ntf->descr);
+	app_name_len     = strlen(ntf->app_name);
+	
+	/* lengths in network byte order */
+	notification_len_nbo = htons(notification_len);
+	title_len_nbo        = htons(title_len);
+	descr_len_nbo        = htons(descr_len);
+	app_name_len_nbo     = htons(app_name_len);
+	
+	/* packet size */
+	length = sizeof(ntf->ver)
+			+ sizeof(ntf->type)
+			+ 2 /* two bytes of flags 12 + 3 + 1 bits */
+			+ sizeof(notification_len_nbo)
+			+ sizeof(title_len_nbo)
+			+ sizeof(descr_len_nbo)
+			+ sizeof(app_name_len_nbo)
+			+ notification_len + title_len + descr_len + app_name_len;
+	
+	packet_data = (unsigned char *) malloc(length);
+	
+	data = packet_data;
 	
 	/* Version */
-	data = (unsigned char *) memcpy(data, &packet->ver, sizeof(packet->ver));
-	data += sizeof(packet->ver);
+	memcpy(data, &ntf->ver, sizeof(ntf->ver));
+	data += sizeof(ntf->ver);
 
 	/* Type */
-	data = (unsigned char *) memcpy(data, &packet->type, sizeof(packet->type));
-	data += sizeof(packet->type);
+	memcpy(data, &ntf->type, sizeof(ntf->type));
+	data += sizeof(ntf->type);
 	
-	/* Flags */
-	packet->flags.reserved = 0;
-	packet->flags.priority = 0;
-	packet->flags.sticky = 0;
-	
-	data = (unsigned char *) memcpy(data, &packet->flags, 2);
+	/* flags */
+	memcpy(data, &ntf->flags, 2);
 	data += 2;
 	
 	/* network byte-order */
-	len = htons(packet->notification_len);
-	memcpy(data, &len, sizeof(unsigned short));
+	memcpy(data, &notification_len_nbo, sizeof(unsigned short));
 	data += sizeof(unsigned short);
 	
-	len = htons(packet->title_len);
-	memcpy(data, &len, sizeof(unsigned short));
+	memcpy(data, &title_len_nbo, sizeof(unsigned short));
 	data += sizeof(unsigned short);
 	
-	len = htons(packet->descr_len);
-	memcpy(data, &len, sizeof(unsigned short));
+	memcpy(data, &descr_len_nbo, sizeof(unsigned short));
 	data += sizeof(unsigned short);
 	
-	len = htons(packet->app_name_len);
-	memcpy(data, &len, sizeof(unsigned short));
+	memcpy(data, &app_name_len_nbo, sizeof(unsigned short));
 	data += sizeof(unsigned short);
+	
 	
 	/* actual data */
-	memcpy(data, packet->notification, packet->notification_len);
-	data += packet->notification_len;
+	memcpy(data, ntf->notification, notification_len);
+	data += notification_len;
 	
 	/* title */
-	memcpy(data, packet->title, packet->title_len);
-	data += packet->title_len;
+	memcpy(data, ntf->title, title_len);
+	data += title_len;
 	
 	/* descriptions */
-	memcpy(data, packet->descr, packet->descr_len);
-	data += packet->descr_len;
+	memcpy(data, ntf->descr, descr_len);
+	data += descr_len;
 	
 	/* application name */
-	memcpy(data, packet->app_name, packet->app_name_len);
-	data += packet->app_name_len;
+	memcpy(data, ntf->app_name, app_name_len);
+	data += app_name_len;
 	
-	return 1;
+	*packet_size = length;
+	
+	return packet_data;
 }
 
-int growl_send_packet(GrowlPacket *packet)
+int growl_send_packet(unsigned char *data, unsigned packet_size, char *ip, short port)
 {
 	int bytes_sent;
 	int sockfd;
 	socklen_t to_len;
 	struct sockaddr_in addr;
 	
-	/*
-	int fromlen;
-	void *recv_buf;
-	int recv_buf_len = 512;
-	*/
 	sockfd = socket(PF_INET, SOCK_DGRAM, 0);
 
 	addr.sin_family = AF_INET;                  /* host byte order */
-	addr.sin_port = htons(GROWL_DEFAULT_PORT);  /* short, network byte order */
-	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	addr.sin_port = htons(port);                /* short, network byte order */
+	addr.sin_addr.s_addr = inet_addr(ip);
 	memset(addr.sin_zero, 0, sizeof(addr.sin_zero));
 	
 	to_len = sizeof(struct sockaddr);
 	
 	/* actually send the packet */
-	bytes_sent = sendto(sockfd, packet->data, packet->len, 0, (struct sockaddr *) &addr, to_len);
+	bytes_sent = sendto(sockfd, data, packet_size, 0, (struct sockaddr *) &addr, to_len);
 	
-	/*
-	if (recvfrom(sockfd, recv_buf, recv_buf_len, 0, (struct sockaddr *) &addr, (unsigned *) &fromlen) < 0) {
-		printf("Error reading from remote host\n");
-	}
-	*/
 	return bytes_sent;
 }

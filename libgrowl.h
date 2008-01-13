@@ -1,42 +1,42 @@
 
-/* protocol versions */
-#define GROWL_PROTOCOL_VERSION 1
-#define GROWL_PROTOCOL_VERSION_AES128 2
-
-/* packet type */
-#define GROWL_TYPE_REGISTRATION 0
-#define GROWL_TYPE_NOTIFICATION 1
-
-/* auth? */
-#define GROWL_TYPE_REGISTRATION_NOAUTH 4
-#define GROWL_TYPE_NOTIFICATION_NOAUTH 5
-
-
 #define MAX_NOTIFICATION_NUM 10
 #define GROWL_DEFAULT_PORT 9887
+
+enum GrowlProtocolVersion {
+	GROWL_PROTOCOL_VERSION        = 1,
+	GROWL_PROTOCOL_VERSION_AES128 = 2
+};
+
+enum GrowlAuthMethod {
+	GROWL_TYPE_REGISTRATION,         /* MD5 auth */
+	GROWL_TYPE_NOTIFICATION,         /* MD5 auth */
+	GROWL_TYPE_REGISTRATION_SHA256,
+	GROWL_TYPE_NOTIFICATION_SHA256,
+	GROWL_TYPE_REGISTRATION_NOAUTH,
+	GROWL_TYPE_NOTIFICATION_NOAUTH
+};
 
 /*
  * Registration packet
  */
-typedef struct _growl_registration_packet {
+typedef struct growl_registration GrowlRegistration;
+	
+struct growl_registration {
 	unsigned char ver;
 	unsigned char type;
-	unsigned char nall;
-	unsigned char ndef;
 	
-	int notifications_num;
-	char *notifications[MAX_NOTIFICATION_NUM];
-	
-	char *md5; /* 16 bytes (md5), 0 (NOAUTH) */
 	char *app_name;
 	
-} GrowlPacketRegister;
+};
 
 
 /*
  * Notification packet
  */
-typedef struct _growl_notification_packet {
+
+typedef struct growl_notification GrowlNotification;
+
+struct growl_notification {
 	unsigned char ver;
 	unsigned char type;
 	
@@ -52,33 +52,22 @@ typedef struct _growl_notification_packet {
 #endif
 	} flags;
 	
-	unsigned short notification_len;
-	unsigned short title_len;
-	unsigned short descr_len;
-	unsigned short app_name_len;
-	
 	char *notification;
 	char *title;
 	char *descr;
 	char *app_name;
 	
-	char *md5; /* 16 bytes (md5), 0 (NOAUTH) */
-	
-} GrowlPacketNtf;
-
-typedef struct {
-	int len;
-	unsigned char *data;
-} GrowlPacket;
+};
 
 
-int growl_register_app(GrowlPacketRegister *reg);
+unsigned char *
+growl_create_register_packet(GrowlRegistration *gp,
+							char *notifications[],
+							int notifications_num,
+							unsigned *packet_size);
 
-int growl_notify(GrowlPacketNtf *reg);
+unsigned char *
+growl_create_notification_packet(GrowlNotification *np, unsigned *packet_size);
 
-int growl_create_register_packet(GrowlPacketRegister *, GrowlPacket *gp);
-
-int growl_create_ntf_packet(GrowlPacketNtf *packet, GrowlPacket *gp);
-
-int growl_send_packet(GrowlPacket *gp);
+int growl_send_packet(unsigned char *data, unsigned packet_size, char *ip, short port);
 

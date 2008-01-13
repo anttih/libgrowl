@@ -19,48 +19,60 @@ int main(int argc, char *argv[])
 
 int register_app(char *name)
 {
-	GrowlPacketRegister *reg;
+	char *notifications[] = { "Test1", "Test2" };
+	unsigned *packet_size;
+	GrowlRegistration *rp;
+	unsigned char *data;
 	
-	reg = (GrowlPacketRegister *) malloc(sizeof(GrowlPacketRegister));
+	packet_size = malloc(sizeof(unsigned));
 	
-	reg->ver  = GROWL_PROTOCOL_VERSION;
-	reg->type = GROWL_TYPE_REGISTRATION_NOAUTH;
+	rp = (GrowlRegistration *) malloc(sizeof(GrowlRegistration));
 	
-	reg->app_name = name;
+	rp->ver      = GROWL_PROTOCOL_VERSION;
+	rp->type     = GROWL_TYPE_REGISTRATION_NOAUTH;
+	rp->app_name = name;
 	
-	reg->notifications[0] = "Test1";
-	reg->notifications[1] = "Test2";
+	data = growl_create_register_packet(rp, notifications, 2, packet_size);
 	
-	reg->notifications_num = 2;
+	bytes = growl_send_packet(data, *packet_size, "127.0.0.1", GROWL_DEFAULT_PORT);
 	
-	bytes += growl_register_app(reg);
+	free(data);
+	free(rp);
+	free(packet_size);
 	
-	free(reg);
 	return 1;
 }
 
 int notify(char *notification, char *title, char *descr, char *app_name)
 {
-	GrowlPacketNtf *ntf;
+	GrowlNotification *ntf;
+	unsigned *packet_size;
+	unsigned char *data;
 	
-	ntf = (GrowlPacketNtf *) malloc(sizeof(GrowlPacketNtf));
+	ntf = (GrowlNotification *) malloc(sizeof(GrowlNotification));
+	packet_size = (unsigned *) malloc(sizeof(unsigned));
 	
-	ntf->ver  = GROWL_PROTOCOL_VERSION;
+	ntf->ver  = 1;
 	ntf->type = GROWL_TYPE_NOTIFICATION_NOAUTH;
-	
-	ntf->notification_len = strlen(notification);
-	ntf->title_len        = strlen(title);
-	ntf->descr_len        = strlen(descr);
-	ntf->app_name_len     = strlen(app_name);
 	
 	ntf->notification = notification;
 	ntf->title        = title;
 	ntf->descr        = descr;
 	ntf->app_name     = app_name;
 	
-	bytes += growl_notify(ntf);
+	ntf->flags.sticky = 1;
+	
+	/*
+	ntf->flags.reserved = 0;
+	ntf->flags.priority = 0;
+	*/
+	
+	data = growl_create_notification_packet(ntf, packet_size);
+	bytes = growl_send_packet(data, *packet_size, "127.0.0.1", GROWL_DEFAULT_PORT);
 	
 	free(ntf);
+	free(data);
+	free(packet_size);
 	
 	return 1;
 }
