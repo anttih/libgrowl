@@ -1,22 +1,23 @@
-/*
- * 
- * Library implementing the Growl protocol
- * 
- * @link http://growl.info/documentation/developer/protocol.php
- * 
- * Author Antti Holvikari <anttih@gmail.com>
- * 
- */
+/****************************************************************
+ *                                                              *
+ * Library implementing the Growl protocol                      *
+ *                                                              *
+ * @link http://growl.info/documentation/developer/protocol.php *
+ *                                                              *
+ * Author Antti Holvikari <anttih@gmail.com>                    *
+ *                                                              *
+ ****************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include "md5.h"
 #include "libgrowl.h"
 
 unsigned char *
-growl_create_register_packet(GrowlRegistration *rp, char *notifications[], int notifications_num, unsigned *packet_size)
+growl_create_register_packet(GrowlRegistration *rp, char *notifications[], int notifications_num, char *passwd, unsigned *packet_size)
 {
 	int i;
 	unsigned short len;
@@ -101,6 +102,14 @@ growl_create_register_packet(GrowlRegistration *rp, char *notifications[], int n
 	for (i = 0; i < ndef; i++) {
 		memcpy(data, (unsigned char *) &i, sizeof(unsigned char));
 		data += sizeof(unsigned char);
+	}
+	
+	/* add checksum if needed */
+	if (rp->type == GROWL_TYPE_REGISTRATION) {
+		unsigned char *data_chksum;
+		
+		data_chksum = (unsigned char *) data - length;
+		add_checksum(data_chksum, length, rp->type, passwd);
 	}
 	
 	*packet_size = length;
@@ -221,4 +230,38 @@ int growl_send_packet(unsigned char *data, unsigned packet_size, char *ip, short
 	bytes_sent = sendto(sockfd, data, packet_size, 0, (struct sockaddr *) &addr, to_len);
 	
 	return bytes_sent;
+}
+
+void add_checksum(unsigned char *data, size_t length, enum GrowlAuthMethod type, char *passwd)
+{
+	unsigned passwd_len;
+	size_t chk_data_len;
+	unsigned char *chk_data;
+	
+	passwd_len = strlen(passwd);
+	
+	chk_data_len = length + passwd_len;
+	
+	chk_data = (unsigned char *) malloc(chk_data_len);
+	
+	memcpy(chk_data, data, length);
+	chk_data += length;
+	
+	memcpy(chk_data, passwd, passwd_len);
+	
+	/* reset pointer */
+	chk_data -= length;
+	
+	if (type <= GROWL_TYPE_NOTIFICATION) {
+		MD5_CTX md_context;
+
+		MD5Init(&md_context);
+		MD5Update(&md_context, chk_data, chk_data_len);
+		MD5Final(&md_context);
+		
+		/* write checksum to packet */
+		memcpy(data, &md_context.digest[0], 16);
+	}
+	
+	free((unsigned char *) chk_data);
 }

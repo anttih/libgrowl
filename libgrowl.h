@@ -64,10 +64,13 @@ unsigned char *
 growl_create_register_packet(GrowlRegistration *gp,
 							char *notifications[],
 							int notifications_num,
+							char *passwd,
 							unsigned *packet_size);
 
 unsigned char *
 growl_create_notification_packet(GrowlNotification *np, unsigned *packet_size);
+
+void add_checksum(unsigned char *data, size_t length, enum GrowlAuthMethod, char *passwd);
 
 int growl_send_packet(unsigned char *data, unsigned packet_size, char *ip, short port);
 

@@ -1,9 +1,11 @@
 CC = gcc
-all :
-	$(CC) -Wall -ansi -pedantic growl.c libgrowl.c -o growl
+CFLAGS = -Wall -ansi -pedantic -g
 
-debug :
-	$(CC) -Wall -g -ansi -pedantic growl.c libgrowl.c -o growl
+growl : md5.o libgrowl.o growl.c
+
+libgrowl : libgrowl.c
+
+md5 : md5.c
 	
 clean :
-	rm -f growl
+	rm -f md5.o libgrowl.o growl
