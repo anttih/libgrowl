@@ -1,11 +1,7 @@
-CC = gcc
-CFLAGS = -Wall -ansi -pedantic -g
+all :
+	cd src; make;
+	cd examples; make;
 
-growl : md5.o libgrowl.o growl.c
-
-libgrowl : libgrowl.c
-
-md5 : md5.c
-	
 clean :
-	rm -f md5.o libgrowl.o growl
+	cd examples; make clean;
+	cd src; make clean;
