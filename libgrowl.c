@@ -106,10 +106,7 @@ growl_create_register_packet(GrowlRegistration *rp, char *notifications[], int n
 	
 	/* add checksum if needed */
 	if (rp->type == GROWL_TYPE_REGISTRATION) {
-		unsigned char *data_chksum;
-		
-		data_chksum = (unsigned char *) data - length;
-		add_checksum(data_chksum, length, rp->type, passwd);
+		add_checksum(packet_data, length - 16, rp->type, passwd);
 	}
 	
 	*packet_size = length;
@@ -235,33 +232,33 @@ int growl_send_packet(unsigned char *data, unsigned packet_size, char *ip, short
 void add_checksum(unsigned char *data, size_t length, enum GrowlAuthMethod type, char *passwd)
 {
 	unsigned passwd_len;
-	size_t chk_data_len;
 	unsigned char *chk_data;
+	size_t chk_data_len;
 	
 	passwd_len = strlen(passwd);
 	
+	/* length of data from which the hash will be taken */
 	chk_data_len = length + passwd_len;
-	
 	chk_data = (unsigned char *) malloc(chk_data_len);
 	
+	/* copy packet and password to the checksum data */
 	memcpy(chk_data, data, length);
 	chk_data += length;
 	
+	/* write password and reset pointer */
 	memcpy(chk_data, passwd, passwd_len);
-	
-	/* reset pointer */
 	chk_data -= length;
 	
 	if (type <= GROWL_TYPE_NOTIFICATION) {
 		MD5_CTX md_context;
-
+		
 		MD5Init(&md_context);
 		MD5Update(&md_context, chk_data, chk_data_len);
 		MD5Final(&md_context);
 		
-		/* write checksum to packet */
-		memcpy(data, &md_context.digest[0], 16);
+		/* write checksum to the end of the packet */
+		memcpy((data + length), &md_context.digest[0], 16);
 	}
 	
-	free((unsigned char *) chk_data);
+	free(chk_data);
 }
