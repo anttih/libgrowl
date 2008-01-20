@@ -116,7 +116,7 @@ growl_create_register_packet(GrowlRegistration *rp, char *notifications[], int n
 }
 
 unsigned char *
-growl_create_notification_packet(GrowlNotification *ntf, unsigned *packet_size)
+growl_create_notification_packet(GrowlNotification *ntf, char *passwd, unsigned *packet_size)
 {
 	/* packet size */
 	size_t length;
@@ -155,6 +155,10 @@ growl_create_notification_packet(GrowlNotification *ntf, unsigned *packet_size)
 			+ sizeof(descr_len_nbo)
 			+ sizeof(app_name_len_nbo)
 			+ notification_len + title_len + descr_len + app_name_len;
+	
+	if (ntf->type == GROWL_TYPE_NOTIFICATION) {
+		length += 16;
+	}
 	
 	packet_data = (unsigned char *) malloc(length);
 	
@@ -201,6 +205,10 @@ growl_create_notification_packet(GrowlNotification *ntf, unsigned *packet_size)
 	/* application name */
 	memcpy(data, ntf->app_name, app_name_len);
 	data += app_name_len;
+	
+	if (ntf->type == GROWL_TYPE_NOTIFICATION) {
+		add_checksum(packet_data, length - 16, ntf->type, passwd);
+	}
 	
 	*packet_size = length;
 	

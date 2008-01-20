@@ -68,7 +68,7 @@ growl_create_register_packet(GrowlRegistration *gp,
 							unsigned *packet_size);
 
 unsigned char *
-growl_create_notification_packet(GrowlNotification *np, unsigned *packet_size);
+growl_create_notification_packet(GrowlNotification *np, char *passwd, unsigned *packet_size);
 
 void add_checksum(unsigned char *data, size_t length, enum GrowlAuthMethod, char *passwd);
 

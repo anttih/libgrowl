@@ -3,6 +3,8 @@
 #include <string.h>
 #include "libgrowl.h"
 
+#define GROWL_PASSWORD "kakka"
+
 static int bytes = 0;
 
 int register_app(char *name);
@@ -11,7 +13,7 @@ int notify(char *notification, char *title, char *descr, char *app_name);
 int main(int argc, char *argv[])
 {
 	register_app(argv[4]);
-	/*notify(argv[1], argv[2], argv[3], argv[4]);*/
+	notify(argv[1], argv[2], argv[3], argv[4]);
 	
 	printf("Sent %d bytes\n", bytes);
 	return 1;
@@ -28,7 +30,7 @@ int register_app(char *name)
 	rp.type     = GROWL_TYPE_REGISTRATION;
 	rp.app_name = name;
 	
-	data = growl_create_register_packet(&rp, notifications, 2, "kakka", &packet_size);
+	data = growl_create_register_packet(&rp, notifications, 2, GROWL_PASSWORD, &packet_size);
 	
 	bytes = growl_send_packet(data, packet_size, "127.0.0.1", GROWL_DEFAULT_PORT);
 	
@@ -44,7 +46,7 @@ int notify(char *notification, char *title, char *descr, char *app_name)
 	unsigned char *data;
 	
 	ntf.ver  = 1;
-	ntf.type = GROWL_TYPE_NOTIFICATION_NOAUTH;
+	ntf.type = GROWL_TYPE_NOTIFICATION;
 	
 	ntf.notification = notification;
 	ntf.title        = title;
@@ -58,7 +60,7 @@ int notify(char *notification, char *title, char *descr, char *app_name)
 	ntf->flags.priority = 0;
 	*/
 	
-	data = growl_create_notification_packet(&ntf, &packet_size);
+	data = growl_create_notification_packet(&ntf, GROWL_PASSWORD, &packet_size);
 	bytes = growl_send_packet(data, packet_size, "127.0.0.1", GROWL_DEFAULT_PORT);
 	
 	free(data);
