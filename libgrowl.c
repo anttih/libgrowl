@@ -1,6 +1,6 @@
 /****************************************************************
  *                                                              *
- * Library implementing the Growl protocol                      *
+ * Library implementing the Growl network protocol              *
  *                                                              *
  * @link http://growl.info/documentation/developer/protocol.php *
  *                                                              *
@@ -35,7 +35,11 @@ growl_create_register_packet(GrowlRegistration *rp, char *notifications[], int n
 	nall = notifications_num;
 	ndef = notifications_num;
 	
-	length = sizeof(rp->ver) + sizeof(rp->type) + sizeof(app_name_len_nbo) + sizeof(nall) + sizeof(ndef);
+	length = sizeof(rp->ver)
+			+ sizeof(rp->type)
+			+ sizeof(app_name_len_nbo)
+			+ sizeof(nall)
+			+ sizeof(ndef);
 	
 	length += app_name_len;
 	
