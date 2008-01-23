@@ -251,7 +251,7 @@ void add_checksum(unsigned char *data, size_t length, enum GrowlAuthMethod type,
 	
 	/* length of data from which the hash will be taken */
 	chk_data_len = length + passwd_len;
-	chk_data = (unsigned char *) malloc(chk_data_len);
+	chk_data = (unsigned char *) alloca(chk_data_len);
 	
 	/* copy packet and password to the checksum data */
 	memcpy(chk_data, data, length);
@@ -271,6 +271,4 @@ void add_checksum(unsigned char *data, size_t length, enum GrowlAuthMethod type,
 		/* write checksum to the end of the packet */
 		memcpy((data + length), &md_context.digest[0], 16);
 	}
-	
-	free(chk_data);
 }
