@@ -17,6 +17,15 @@ enum GrowlAuthMethod {
 };
 
 /*
+ * Error codes
+ */
+#define GROWL_ERR_MALLOC 1
+#define GROWL_ERR_SEND   2
+
+#define RETURN_ERR_PTR(err) return ((void *)-err)
+#define RETURN_ERR_VAL(err) return (-err)
+
+/*
  * Registration packet
  */
 typedef struct growl_registration GrowlRegistration;
@@ -25,7 +34,7 @@ struct growl_registration {
 	unsigned char ver;
 	unsigned char type;
 	
-	char *app_name;
+	const char *app_name;
 	
 };
 
@@ -52,10 +61,10 @@ struct growl_notification {
 #endif
 	} flags;
 	
-	char *notification;
-	char *title;
-	char *descr;
-	char *app_name;
+	const char *notification;
+	const char *title;
+	const char *descr;
+	const char *app_name;
 	
 };
 

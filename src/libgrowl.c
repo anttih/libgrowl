@@ -61,6 +61,9 @@ growl_create_register_packet(GrowlRegistration *rp, char *notifications[], int n
 	
 	/* allocate for packet data */
 	packet_data = (unsigned char *) malloc(length);
+	if (packet_data == NULL) {
+		RETURN_ERR_PTR(GROWL_ERR_MALLOC);
+	}
 	
 	data = packet_data;
 	
@@ -166,6 +169,10 @@ growl_create_notification_packet(GrowlNotification *ntf, char *passwd, unsigned 
 	
 	packet_data = (unsigned char *) malloc(length);
 	
+	if (packet_data == NULL) {
+		RETURN_ERR_PTR(GROWL_ERR_MALLOC);
+	}
+	
 	data = packet_data;
 	
 	/* Version */
@@ -237,6 +244,10 @@ int growl_send_packet(unsigned char *data, unsigned packet_size, char *ip, short
 	
 	/* actually send the packet */
 	bytes_sent = sendto(sockfd, data, packet_size, 0, (struct sockaddr *) &addr, to_len);
+	
+	if (bytes_sent == -1) {
+		RETURN_ERR_VAL(GROWL_ERR_SEND);
+	}
 	
 	return bytes_sent;
 }

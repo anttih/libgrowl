@@ -3,12 +3,13 @@
 #include <string.h>
 #include "libgrowl.h"
 
-#define GROWL_PASSWORD "kakka"
+#define GROWL_PASSWORD ""
+#define GROWL_HOST "127.0.0.1"
 
 static int bytes = 0;
 
-int register_app(char *name);
-int notify(char *notification, char *title, char *descr, char *app_name);
+int register_app(const char *name);
+int notify(const char *notification, const char *title, const char *descr, const char *app_name);
 
 int main(int argc, char *argv[])
 {
@@ -19,7 +20,7 @@ int main(int argc, char *argv[])
 	return 1;
 }
 
-int register_app(char *name)
+int register_app(const char *name)
 {
 	char *notifications[] = { "Test1", "Test2" };
 	unsigned packet_size;
@@ -32,14 +33,24 @@ int register_app(char *name)
 	
 	data = growl_create_register_packet(&rp, notifications, 2, GROWL_PASSWORD, &packet_size);
 	
-	bytes = growl_send_packet(data, packet_size, "127.0.0.1", GROWL_DEFAULT_PORT);
+	if ((int)data < 0) {
+		fprintf(stderr, "Error creating registration packet\n");
+		exit(-1);
+	}
+	
+	bytes = growl_send_packet(data, packet_size, GROWL_HOST, GROWL_DEFAULT_PORT);
+	if (bytes < 0) {
+		fprintf(stderr, "Error sending registration packet\n");
+		free(data);
+		exit(-1);
+	}
 	
 	free(data);
 	
 	return 1;
 }
 
-int notify(char *notification, char *title, char *descr, char *app_name)
+int notify(const char *notification, const char *title, const char *descr, const char *app_name)
 {
 	GrowlNotification ntf;
 	unsigned packet_size;
@@ -52,8 +63,7 @@ int notify(char *notification, char *title, char *descr, char *app_name)
 	ntf.title        = title;
 	ntf.descr        = descr;
 	ntf.app_name     = app_name;
-	
-	ntf.flags.sticky = 1;
+	ntf.flags.sticky = 0;
 	
 	/*
 	ntf->flags.reserved = 0;
@@ -61,7 +71,17 @@ int notify(char *notification, char *title, char *descr, char *app_name)
 	*/
 	
 	data = growl_create_notification_packet(&ntf, GROWL_PASSWORD, &packet_size);
-	bytes = growl_send_packet(data, packet_size, "127.0.0.1", GROWL_DEFAULT_PORT);
+	if ((int)data < 0) {
+		fprintf(stderr, "Error creating notification packet\n");
+		exit(-1);
+	}
+	
+	bytes = growl_send_packet(data, packet_size, GROWL_HOST, GROWL_DEFAULT_PORT);
+	if (bytes < 0) {
+		fprintf(stderr, "Error sending notification packet\n");
+		free(data);
+		exit(-1);
+	}
 	
 	free(data);
 	
