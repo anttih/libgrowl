@@ -252,7 +252,7 @@ int growl_send_packet(unsigned char *data, unsigned packet_size, char *ip, short
 	return bytes_sent;
 }
 
-void add_checksum(unsigned char *data, size_t length, enum GrowlAuthMethod type, char *passwd)
+void add_checksum(unsigned char *data, size_t length, enum GrowlAuthMethod type, const char *passwd)
 {
 	unsigned passwd_len;
 	unsigned char *chk_data;
